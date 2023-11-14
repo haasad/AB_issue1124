@@ -1,11 +1,8 @@
 name: tests
 on:
-  pull_request:
-    branches:
-      - main
   push:
     branches:
-      - main
+      - sqlite
 
 jobs:
   tests:
@@ -41,8 +38,8 @@ jobs:
       - name: Run linux tests
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
-          for i in {1..10}; do echo -n "$i: "; xvfb-run --auto-servernum python qthread.py && echo success; done
+          for i in {1..10}; do echo -n "$i: "; xvfb-run --auto-servernum python sqlite.py && echo success; done
       - name: Run tests
         if: ${{ matrix.os != 'ubuntu-latest' }}
         run: |
-          for i in {1..10}; do echo -n "$i: "; python qthread.py && echo success; done
+          for i in {1..10}; do echo -n "$i: "; python sqlite.py && echo success; done
