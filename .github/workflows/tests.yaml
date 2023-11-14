@@ -1,0 +1,48 @@
+name: tests
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup python ${{ matrix.python-version }} conda environment
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-name: test
+          create-args: >-
+            python=${{ matrix.python-version }}
+            pyside2
+            brightway2
+      - name: Install linux dependencies
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        # https://pytest-qt.readthedocs.io/en/latest/troubleshooting.html#github-actions
+        run: |
+          sudo apt install -y libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 \
+            libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xinerama0 \
+            libxcb-xfixes0 xvfb x11-utils glibc-tools;
+          /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid \
+          --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 \
+          1920x1200x24 -ac +extension GLX +render -noreset;
+      - name: Run linux tests
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          for i in {1..10}; do echo -n "$i: "; xvfb-run --auto-servernum python qthread.py && echo success; done
+      - name: Run tests
+        if: ${{ matrix.os != 'ubuntu-latest' }}
+        run: |
+          for i in {1..10}; do echo -n "$i: "; python qthread.py && echo success; done
